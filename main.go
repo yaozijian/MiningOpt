@@ -14,8 +14,29 @@
 
 package main
 
-import "github.com/yaozijian/MiningOpt/cmd"
+import (
+	log "github.com/cihub/seelog"
+	"github.com/yaozijian/MiningOpt/cmd"
+)
+
+const (
+	console_log = `<seelog>
+	<outputs formatid="detail">
+		<console/>
+	</outputs>
+	<formats>
+		<format id="detail" format="[%Date(2006-01-02 15:04:05.000)][%Level][%File:%Line] %Msg%n" />
+	</formats>
+</seelog>
+`
+)
+
+func initlog() {
+	logger, _ := log.LoggerFromConfigAsString(console_log)
+	log.ReplaceLogger(logger)
+}
 
 func main() {
+	initlog()
 	cmd.Execute()
 }

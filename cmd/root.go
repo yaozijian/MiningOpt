@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"time"
 
 	log "github.com/cihub/seelog"
 	"github.com/spf13/cobra"
@@ -106,8 +105,9 @@ func doMiningOperation(cmd *cobra.Command, args []string) {
 	}
 
 	log.Info("ultpit begin")
-	optimization.DoMiningOptimization(param)
-	log.Info("ultpit finished")
 
-	time.Sleep(time.Millisecond * 300)
+	optimization.DoMiningOptimization(param)
+
+	log.Info("ultpit finished")
+	log.Flush()
 }
