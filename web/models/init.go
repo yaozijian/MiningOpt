@@ -2,23 +2,60 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/astaxie/beego"
+	"github.com/yaozijian/MiningOpt/distribution"
+
 	log "github.com/cihub/seelog"
 )
 
-func Init() {
+func Init(webcfg *WebConfig) {
+	switch webcfg.StartType {
+	case WebType_Manager:
+		runTaskManager(webcfg)
+	case WebType_Worker:
+		runTaskWorker(webcfg)
+	}
+}
+
+func runTaskManager(webcfg *WebConfig) {
+
 	task_manager = &manager{}
+
 	task_manager.readin_task_list()
+
 	sort.SliceStable(task_manager.task_list, func(x, y int) bool {
 		a := task_manager.task_list[x]
 		b := task_manager.task_list[y]
 		return a.create.Unix() < b.create.Unix()
 	})
+
+	//-----
+
+	rpcxcfg := distribution.RpcxServerConfig{
+		ServiceAddr: fmt.Sprintf("%v:%v", webcfg.MyIpAddr, webcfg.RpcxPort),
+		EtcdServers: webcfg.EtcdServers,
+		URLPrefix:   fmt.Sprintf("http://%v:%v", webcfg.MyIpAddr, beego.BConfig.Listen.HTTPPort),
+		Async:       true,
+	}
+
+	task_manager.task_center = distribution.StartManager(rpcxcfg)
+
+	//-----
+
+	go task_manager.waitNotify()
+
+	for _, task := range task_manager.task_list {
+		if task.status != Task_Done_OK {
+			task_manager.run_task(task)
+		}
+	}
 }
 
 func GetTaskManager() TaskManager {
@@ -46,7 +83,7 @@ func (m *manager) readin_task(dir string) error {
 	idx := strings.LastIndex(dir, string(os.PathSeparator))
 	id := dir[idx+1:]
 
-	f := dir + "/status.json"
+	f := dir + "/" + Task_status_file
 
 	cont, e := ioutil.ReadFile(f)
 

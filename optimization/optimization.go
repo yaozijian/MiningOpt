@@ -12,33 +12,38 @@ import (
 
 type (
 	MiningOptParams struct {
+		TaskId     string
+		Notify     chan string
 		InputFile  string
 		OutputFile string
 		ParamFile  string
 	}
 )
 
-func DoMiningOptimization(opt MiningOptParams) {
+func DoMiningOptimization(opt MiningOptParams) error {
 
-	log.Info("Being parsing parameters")
+	log.Infof("Being parsing parameters from %v", opt.ParamFile)
+	notifyStatus(opt.Notify, "Parsing parameters file")
 
 	var params Parameters
 
-	if readJsonFile(opt.ParamFile, &params) != nil {
-		return
+	if e := readJsonFile(opt.ParamFile, &params); e != nil {
+		return e
 	}
 
-	log.Info("Begin reading input")
+	log.Infof("Begin reading input from %v", opt.InputFile)
+	notifyStatus(opt.Notify, "Reading input data")
 
-	if params.Input.initializeFromGzip(opt.InputFile) != nil {
-		return
+	if e := params.Input.initializeFromGzip(opt.InputFile); e != nil {
+		return e
 	}
 
-	selection, status := params.optimizating()
+	selection, status := params.optimizating(opt.Notify)
 
 	if status != 0 {
-		log.Info("ERROR: failed optimizing")
-		return
+		e := fmt.Errorf("Failed do optimization")
+		log.Error(e)
+		return e
 	}
 
 	var writer io.Writer
@@ -52,8 +57,9 @@ func DoMiningOptimization(opt MiningOptParams) {
 
 		file, e := os.Create(opt.OutputFile)
 		if e != nil {
-			log.Infof("Failed to create output file %v: %v", opt.OutputFile, e)
-			return
+			e = fmt.Errorf("Failed to create output file %v: %v", opt.OutputFile, e)
+			log.Error(e)
+			return e
 		}
 		defer file.Close()
 		writer = file
@@ -85,5 +91,16 @@ func DoMiningOptimization(opt MiningOptParams) {
 
 	if doclose != nil {
 		doclose()
+	}
+
+	return nil
+}
+
+func notifyStatus(ch chan<- string, status string) {
+	if ch != nil {
+		select {
+		case ch <- status:
+		default:
+		}
 	}
 }

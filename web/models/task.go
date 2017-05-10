@@ -26,13 +26,11 @@ func (t *task_item) Server() string {
 func (t *task_item) Status() string {
 	t.Lock()
 	defer t.Unlock()
-	return t.status
-}
-
-func (t *task_item) Progress() float64 {
-	t.Lock()
-	defer t.Unlock()
-	return t.progress
+	if len(t.desc) == 0 {
+		return t.status
+	} else {
+		return fmt.Sprintf("%v: %v", t.status, t.desc)
+	}
 }
 
 func (t *task_item) DataURL() (data string) {

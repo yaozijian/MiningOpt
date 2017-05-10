@@ -1,6 +1,8 @@
 package optimization
 
 import (
+	"fmt"
+
 	log "github.com/cihub/seelog"
 )
 
@@ -12,7 +14,7 @@ type (
 	}
 )
 
-func (ctx *Parameters) optimizating() ([][]bool, int) {
+func (ctx *Parameters) optimizating(ch chan<- string) ([][]bool, int) {
 
 	nReal := len(ctx.Input.Ebv)
 	nData := len(ctx.Input.Ebv[0])
@@ -21,9 +23,11 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 	log.Infof("Number of rows: %v", nData)
 
 	log.Info("Begin creating naive mask")
+	notifyStatus(ch, "Creating naive mask")
 	mask := ctx.generateMask()
 
 	log.Info("Begin creating precedence")
+	notifyStatus(ch, "Creating precedence")
 	if ctx.Precedence.init(ctx, mask) != nil {
 		return nil, -1
 	}
@@ -31,6 +35,7 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 	//--------------------------------------------------
 
 	log.Info("Updating mask")
+	notifyStatus(ch, "Updating mask")
 	for i := 0; i < nData; i++ {
 		if mask[i] {
 			if key := ctx.Precedence.keys[i]; key != MISSING {
@@ -44,6 +49,7 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 	//--------------------------------------------------
 
 	log.Info("Begin compressing")
+	notifyStatus(ch, "Compressing")
 
 	var condensedEBV Data
 	var condensedPre Precedence
@@ -61,6 +67,7 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 	// Solve-em
 
 	log.Info("Begin optimizing")
+	notifyStatus(ch, "Optimizing")
 
 	for r := 0; r < nReal; r++ {
 
@@ -71,7 +78,7 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 			return nil, 1
 		}
 
-		row, status := engine.computeSolution(condensedEBV.Ebv[r], &condensedPre)
+		row, status := engine.computeSolution(ch, condensedEBV.Ebv[r], &condensedPre)
 
 		if status != 0 {
 			return nil, status
@@ -89,12 +96,19 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 			}
 		}
 		log.Infof("Completed realization %3v. Blocks: %-6v, EBV: %f", r, count, ebv)
+
+		progress := fmt.Sprintf(
+			"Solved %v/%v(%.3f%%)",
+			(r + 1), nReal, 100.0*float64(r+1)/float64(nReal),
+		)
+		notifyStatus(ch, progress)
 	}
 
 	//--------------------------------------------------
 	// Expand the solutions out
 
 	log.Info("Decompressing solutions")
+	notifyStatus(ch, "Decompressing")
 
 	selection := make([][]bool, nReal)
 	for i := range selection {
@@ -113,6 +127,7 @@ func (ctx *Parameters) optimizating() ([][]bool, int) {
 
 	// Fix air blocks
 	log.Info("Fixing air blocks")
+	notifyStatus(ch, "Fixing air blocks")
 	for r := 0; r < nReal; r++ {
 		for i := 0; i < nData; i++ {
 			if selection[r][i] {

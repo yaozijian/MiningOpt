@@ -26,7 +26,7 @@ type (
 	}
 
 	UltpitEngine interface {
-		computeSolution(data []float64, pre *Precedence) ([]bool, int)
+		computeSolution(ch chan<- string, data []float64, pre *Precedence) ([]bool, int)
 	}
 
 	LG_Vertex struct {
@@ -72,14 +72,16 @@ func getEngine(param *EngineParam) (UltpitEngine, error) {
 	}
 }
 
-func (this *LG3D) computeSolution(data []float64, pre *Precedence) (solution []bool, n int) {
+func (this *LG3D) computeSolution(ch chan<- string, data []float64, pre *Precedence) (solution []bool, n int) {
 
 	this.count = len(data)
 
 	solution = make([]bool, this.count)
 
+	notifyStatus(ch, "Init normalized tree")
 	this.initNormalizedTree(data, pre)
 
+	notifyStatus(ch, "Solve")
 	this.solve()
 
 	for i := 0; i < this.count; i++ {

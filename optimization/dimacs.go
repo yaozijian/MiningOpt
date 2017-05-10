@@ -55,15 +55,17 @@ func (this *DimacsSolver) init() error {
 	}
 }
 
-func (this *DimacsSolver) computeSolution(data []float64, pre *Precedence) (solution []bool, r int) {
+func (this *DimacsSolver) computeSolution(ch chan<- string, data []float64, pre *Precedence) (solution []bool, r int) {
 
 	count := len(data)
 
 	solution = make([]bool, count)
 
+	notifyStatus(ch, "Sending input")
 	this.sendInput(data, pre, this.stdin)
 	this.stdin.Close()
 
+	notifyStatus(ch, "Reading output")
 	scanner := bufio.NewScanner(this.stdout)
 	scanner.Split(bufio.ScanLines)
 

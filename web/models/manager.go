@@ -2,11 +2,16 @@ package models
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"sync"
 	"time"
+
+	"github.com/yaozijian/MiningOpt/distribution"
+	"github.com/yaozijian/MiningOpt/optimization"
+	"github.com/yaozijian/rpcxutils"
 
 	log "github.com/cihub/seelog"
 )
@@ -17,7 +22,6 @@ type (
 		Create() time.Time
 		Server() string
 		Status() string
-		Progress() float64
 		DataURL() string
 		ParamURL() string
 		ResultURL() string
@@ -30,11 +34,12 @@ type (
 	}
 
 	task_item struct {
-		id       string
-		create   time.Time
-		status   string
-		progress float64
-		server   Server
+		id     string
+		create time.Time
+		status string
+		desc   string
+		outurl string
+		server Server
 		sync.Mutex
 	}
 
@@ -46,6 +51,7 @@ type (
 	manager struct {
 		task_list   []*task_item
 		server_list []*server_item
+		task_center distribution.Manager
 		sync.Mutex
 	}
 )
@@ -56,10 +62,11 @@ const (
 	Task_data_file   = "data.gz"
 	Task_param_file  = "param.json"
 	Task_result_file = "result.gz"
+	Task_status_file = "status.json"
 )
 
 const (
-	Task_New         = "Submiited"
+	Task_New         = "Submited"
 	Task_Waiting     = "Wating"
 	Task_Running     = "Running"
 	Task_Done_OK     = "Done OK"
@@ -110,7 +117,7 @@ func (m *manager) ServerList() []Server {
 
 func (m *manager) NewTask(id string) error {
 
-	file := fmt.Sprintf("%v/%v/status.json", Task_data_dir, id)
+	file := fmt.Sprintf("%v/%v/%v", Task_data_dir, id, Task_status_file)
 
 	status := &task_status{
 		Create: time.Now(),
@@ -127,16 +134,47 @@ func (m *manager) NewTask(id string) error {
 		return e
 	} else {
 
-		item := &task_item{
+		task := &task_item{
 			id:     id,
 			create: status.Create,
 			status: status.Status,
 		}
 
 		m.Lock()
-		m.task_list = append(m.task_list, item)
+		m.task_list = append(m.task_list, task)
 		m.Unlock()
 
+		m.run_task(task)
+
 		return nil
+	}
+}
+
+func (m *manager) run_task(task *task_item) {
+
+	prefix := "http://x:8080"
+
+	args := optimization.MiningOptParams{
+		TaskId:    task.id,
+		InputFile: prefix + task.DataURL(),
+		ParamFile: prefix + task.ParamURL(),
+	}
+
+	m.task_center.MiningOpt(context.Background(), args, &task.outurl)
+}
+
+func (m *manager) waitNotify() {
+	for {
+		status := <-m.task_center.NotifyChnl()
+
+		m.Lock()
+		for _, task := range m.task_list {
+			if status.TaskId == task.id {
+				task.status = rpcxutils.TaskState2Desc(status.TaskStatus.Status)
+				task.desc = status.Desc
+				break
+			}
+		}
+		m.Unlock()
 	}
 }
