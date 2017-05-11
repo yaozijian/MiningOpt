@@ -2,6 +2,7 @@ package web
 
 import (
 	"net"
+	"strings"
 
 	"github.com/astaxie/beego"
 	log "github.com/cihub/seelog"
@@ -54,6 +55,10 @@ func getMyIpAddr() string {
 	for _, addr := range addrs {
 
 		item := addr.String()
+
+		if idx := strings.Index(item, "/"); idx >= 0 {
+			item = item[:idx]
+		}
 
 		ip := net.ParseIP(item)
 

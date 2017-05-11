@@ -7,7 +7,7 @@ import (
 	"github.com/yaozijian/MiningOpt/distribution"
 )
 
-func runTaskWorker(webcfg *WebConfig) {
+func runTaskWorker(webcfg *WebConfig) error {
 
 	rpcxcfg := distribution.RpcxServerConfig{
 		ServiceAddr: fmt.Sprintf("%v:%v", webcfg.MyIpAddr, webcfg.RpcxPort),
@@ -15,5 +15,5 @@ func runTaskWorker(webcfg *WebConfig) {
 		URLPrefix:   fmt.Sprintf("http://%v:%v", webcfg.MyIpAddr, beego.BConfig.Listen.HTTPPort),
 	}
 
-	distribution.StartWorker(rpcxcfg)
+	return distribution.StartWorker(rpcxcfg)
 }

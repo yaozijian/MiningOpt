@@ -52,6 +52,7 @@ type (
 		task_list   []*task_item
 		server_list []*server_item
 		task_center distribution.Manager
+		urlprefix   string
 		sync.Mutex
 	}
 )
@@ -152,12 +153,10 @@ func (m *manager) NewTask(id string) error {
 
 func (m *manager) run_task(task *task_item) {
 
-	prefix := "http://x:8080"
-
 	args := optimization.MiningOptParams{
 		TaskId:    task.id,
-		InputFile: prefix + task.DataURL(),
-		ParamFile: prefix + task.ParamURL(),
+		InputFile: m.urlprefix + task.DataURL(),
+		ParamFile: m.urlprefix + task.ParamURL(),
 	}
 
 	m.task_center.MiningOpt(context.Background(), args, &task.outurl)
@@ -166,6 +165,13 @@ func (m *manager) run_task(task *task_item) {
 func (m *manager) waitNotify() {
 	for {
 		status := <-m.task_center.NotifyChnl()
+
+		log.Infof(
+			"Notify: id=%v status=%v desc=%v",
+			status.TaskId,
+			rpcxutils.TaskState2Desc(status.TaskStatus.Status),
+			status.Desc,
+		)
 
 		m.Lock()
 		for _, task := range m.task_list {

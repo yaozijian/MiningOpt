@@ -15,16 +15,18 @@ import (
 	log "github.com/cihub/seelog"
 )
 
-func Init(webcfg *WebConfig) {
+func Init(webcfg *WebConfig) error {
 	switch webcfg.StartType {
 	case WebType_Manager:
-		runTaskManager(webcfg)
+		return runTaskManager(webcfg)
 	case WebType_Worker:
-		runTaskWorker(webcfg)
+		return runTaskWorker(webcfg)
+	default:
+		return fmt.Errorf("Wrong StartType")
 	}
 }
 
-func runTaskManager(webcfg *WebConfig) {
+func runTaskManager(webcfg *WebConfig) error {
 
 	task_manager = &manager{}
 
@@ -45,7 +47,13 @@ func runTaskManager(webcfg *WebConfig) {
 		Async:       true,
 	}
 
+	task_manager.urlprefix = rpcxcfg.URLPrefix
+
 	task_manager.task_center = distribution.StartManager(rpcxcfg)
+
+	if task_manager.task_center == nil {
+		return fmt.Errorf("Error to start manager")
+	}
 
 	//-----
 
@@ -56,6 +64,8 @@ func runTaskManager(webcfg *WebConfig) {
 			task_manager.run_task(task)
 		}
 	}
+
+	return nil
 }
 
 func GetTaskManager() TaskManager {
