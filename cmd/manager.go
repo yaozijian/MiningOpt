@@ -35,7 +35,7 @@ func init() {
 	RootCmd.AddCommand(managerCmd)
 
 	flagset := managerCmd.PersistentFlags()
-	flagset.StringSliceP("etcd-servers", "e", nil, "Etcd servers used for coordinate with workers")
+	flagset.StringSliceP("etcd-servers", "e", []string{"127.0.0.1:2379"}, "Etcd servers used for coordinate with workers")
 	flagset.Uint16P("http-port", "w", 8080, "Http listen port")
 	flagset.Uint16P("rpcx-port", "r", 9527, "Rpcx listen port")
 }
