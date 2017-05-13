@@ -11,6 +11,7 @@ import (
 
 	"github.com/yaozijian/MiningOpt/distribution"
 	"github.com/yaozijian/MiningOpt/optimization"
+	"github.com/yaozijian/relayr"
 	"github.com/yaozijian/rpcxutils"
 
 	log "github.com/cihub/seelog"
@@ -49,12 +50,15 @@ type (
 	}
 
 	manager struct {
-		task_list   []*task_item
-		server_list []*server_item
-		task_center distribution.Manager
-		urlprefix   string
+		task_list     []*task_item
+		server_list   []*server_item
+		task_center   distribution.Manager
+		urlprefix     string
+		client_notify *relayr.Exchange
 		sync.Mutex
 	}
+
+	TaskStatusNotify struct{}
 )
 
 const (
@@ -165,22 +169,30 @@ func (m *manager) run_task(task *task_item) {
 func (m *manager) waitNotify() {
 	for {
 		status := <-m.task_center.NotifyChnl()
-
-		log.Infof(
-			"Notify: id=%v status=%v desc=%v",
-			status.TaskId,
-			rpcxutils.TaskState2Desc(status.TaskStatus.Status),
-			status.Desc,
-		)
+		/*
+			log.Infof(
+				"Notify: id=%v status=%v desc=%v",
+				status.TaskId,
+				rpcxutils.TaskState2Desc(status.TaskStatus.Status),
+				status.Desc,
+			)
+		*/
 
 		m.Lock()
 		for _, task := range m.task_list {
 			if status.TaskId == task.id {
 				task.status = rpcxutils.TaskState2Desc(status.TaskStatus.Status)
 				task.desc = status.Desc
+				// Notify web to update task's status
+				m.client_notify.Relay(TaskStatusNotify{}).Call("UpdateTaskStatus", task.id, task.Status())
 				break
 			}
 		}
 		m.Unlock()
 	}
+}
+
+func (n TaskStatusNotify) UpdateTaskStatus(relay *relayr.Relay, id, status string) {
+	log.Infof("Notify Web: id=%v status=%v", id, status)
+	relay.Clients.All("updateTaskStatus", id, status)
 }

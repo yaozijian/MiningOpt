@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"net"
 	"strings"
 
@@ -45,7 +46,7 @@ func Run(cfg models.WebConfig) {
 
 	beego.SetStaticPath("/"+models.Task_data_dir, models.Task_data_dir)
 
-	beego.Run()
+	beego.Run(fmt.Sprintf(":%v", cfg.HttpPort))
 }
 
 func getMyIpAddr() string {

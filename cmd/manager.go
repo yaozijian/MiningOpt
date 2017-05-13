@@ -36,6 +36,7 @@ func init() {
 
 	flagset := managerCmd.PersistentFlags()
 	flagset.StringSliceP("etcd-servers", "e", nil, "Etcd servers used for coordinate with workers")
+	flagset.Uint16P("http-port", "w", 8080, "Http listen port")
 	flagset.Uint16P("rpcx-port", "r", 9527, "Rpcx listen port")
 }
 
@@ -48,13 +49,15 @@ func runWeb(cmd *cobra.Command, args []string, typ models.WebType) {
 	viper.BindPFlags(cmd.Flags())
 
 	etcd_servers := viper.GetStringSlice("etcd-servers")
+	http_port := viper.GetInt("http-port")
 	rpcx_port := viper.GetInt("rpcx-port")
 
-	if len(etcd_servers) == 0 || rpcx_port < 0 || rpcx_port > 65535 {
+	if len(etcd_servers) == 0 || rpcx_port < 0 || rpcx_port > 65535 || http_port < 0 || http_port > 65535 {
 		cmd.Usage()
 	} else {
 		cfg := models.WebConfig{
 			EtcdServers: etcd_servers,
+			HttpPort:    uint16(http_port),
 			RpcxPort:    uint16(rpcx_port),
 			StartType:   typ,
 		}

@@ -5,6 +5,7 @@ type (
 
 	WebConfig struct {
 		EtcdServers []string
+		HttpPort    uint16
 		RpcxPort    uint16
 		StartType   WebType
 		MyIpAddr    string

@@ -1,5 +1,10 @@
 
-The Go version of this program.
+Mining optimization program,rewrite from [https://github.com/MatthewVD/ultpit](https://github.com/MatthewVD/ultpit).
+
+It can run in 3 modes:
+
+1. 
+
 
 * opt.exe is the executable files compile for 32 bits Windows.
 * I have tested it with the 5 test datas in test directory,the test all passed.

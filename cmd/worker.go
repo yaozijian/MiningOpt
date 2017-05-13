@@ -34,7 +34,8 @@ func init() {
 
 	flagset := workerCmd.PersistentFlags()
 	flagset.StringSliceP("etcd-servers", "e", nil, "Etcd servers used for coordinate with manager")
-	flagset.Uint16P("rpcx-port", "r", 9527, "Rpcx listen port")
+	flagset.Uint16P("http-port", "w", 8081, "Http listen port")
+	flagset.Uint16P("rpcx-port", "r", 9528, "Rpcx listen port")
 }
 
 func runWorker(cmd *cobra.Command, args []string) {

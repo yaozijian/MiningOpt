@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/astaxie/beego"
+	"github.com/yaozijian/relayr"
 	"github.com/yaozijian/MiningOpt/distribution"
 
 	log "github.com/cihub/seelog"
@@ -64,6 +65,10 @@ func runTaskManager(webcfg *WebConfig) error {
 			task_manager.run_task(task)
 		}
 	}
+
+	task_manager.client_notify = relayr.NewExchange()
+	task_manager.client_notify.RegisterRelay(TaskStatusNotify{})
+	beego.Handler("/relayr/", task_manager.client_notify, true)
 
 	return nil
 }

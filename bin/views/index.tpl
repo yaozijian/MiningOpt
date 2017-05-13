@@ -7,10 +7,12 @@
 	<meta name="HandheldFriendly" content="True" />
 	<link rel="shortcut icon" href="/static/favicon.ico">	
 	<title>Mining Optimization</title>
+    
     <!-- Bootstrap -->
     <script src="static/jquery-1.12.4/jquery.min.js"></script>
     <script src="static/bootstrap-3.3.7/js/bootstrap.min.js"></script>
     <link href="static/bootstrap-3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    
     <!-- Bootstrap file input from http://plugins.krajee.com/file-input --> 
     <link href="static/bootstrap-fileinput-4.3.9/css/fileinput.css" media="all" rel="stylesheet" type="text/css"/>    
     <script src="static/bootstrap-fileinput-4.3.9/js/fileinput.js" type="text/javascript"></script>
@@ -26,6 +28,20 @@
     		$("#param-file").fileinput(cfg);
     	});
     </script>
+
+    <!-- Relayr from https://github.com/yaozijian/relayr -->
+    <script src="/relayr"></script>
+    <script type="text/javascript">
+    	RelayRConnection.ready(function() {
+    		RelayR.TaskStatusNotify.client.updateTaskStatus = function(id,status) {
+    			var taskrow = document.getElementById(id);
+    			if (taskrow != null){
+    				console.log("found taskrow");
+    				taskrow.cells[1].innerHTML = status;
+    			}
+    		};
+		});
+	</script>
 </head>
 <body>
 <div class="container-fluid">
@@ -59,7 +75,7 @@
 							</thead>
 							<tbody>
 								{{range .tasklist}}
-									<tr>
+									<tr id="{{.Id}}">
 										<td>{{.Id}}</td>
 										<td>{{.Status}}</td>
 										<td></td>
