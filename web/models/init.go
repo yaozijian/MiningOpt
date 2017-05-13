@@ -44,7 +44,7 @@ func runTaskManager(webcfg *WebConfig) error {
 	rpcxcfg := distribution.RpcxServerConfig{
 		ServiceAddr: fmt.Sprintf("%v:%v", webcfg.MyIpAddr, webcfg.RpcxPort),
 		EtcdServers: webcfg.EtcdServers,
-		URLPrefix:   fmt.Sprintf("http://%v:%v", webcfg.MyIpAddr, beego.BConfig.Listen.HTTPPort),
+		URLPrefix:   fmt.Sprintf("http://%v:%v", webcfg.MyIpAddr, webcfg.HttpPort),
 		Async:       true,
 	}
 
