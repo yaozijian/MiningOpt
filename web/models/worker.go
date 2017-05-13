@@ -13,6 +13,7 @@ func runTaskWorker(webcfg *WebConfig) error {
 		ServiceAddr: fmt.Sprintf("%v:%v", webcfg.MyIpAddr, webcfg.RpcxPort),
 		EtcdServers: webcfg.EtcdServers,
 		URLPrefix:   fmt.Sprintf("http://%v:%v", webcfg.MyIpAddr, beego.BConfig.Listen.HTTPPort),
+		Async:       true,
 	}
 
 	return distribution.StartWorker(rpcxcfg)

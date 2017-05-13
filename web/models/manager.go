@@ -26,6 +26,7 @@ type (
 		DataURL() string
 		ParamURL() string
 		ResultURL() string
+		Encode2Json() string
 	}
 
 	TaskManager interface {
@@ -40,7 +41,7 @@ type (
 		status string
 		desc   string
 		outurl string
-		server Server
+		server string
 		sync.Mutex
 	}
 
@@ -71,13 +72,8 @@ const (
 )
 
 const (
-	Task_New         = "Submited"
-	Task_Waiting     = "Wating"
-	Task_Running     = "Running"
-	Task_Done_OK     = "Done OK"
-	Task_Done_Failed = "Done Failed"
-	Task_Timeout     = "Timeout"
-	Task_Aborted     = "Canceled"
+	task_status_OK              = "OK"
+	task_status_Download_Failed = "Download failed"
 )
 
 var (
@@ -126,7 +122,7 @@ func (m *manager) NewTask(id string) error {
 
 	status := &task_status{
 		Create: time.Now(),
-		Status: Task_New,
+		Status: rpcxutils.TaskState2Desc(rpcxutils.Task_New),
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -163,28 +159,38 @@ func (m *manager) run_task(task *task_item) {
 		ParamFile: m.urlprefix + task.ParamURL(),
 	}
 
-	m.task_center.MiningOpt(context.Background(), args, &task.outurl)
+	helper := &rpcxutils.ContextHelper{context.Background()}
+	helper.Header2().Set("TaskId", task.id)
+
+	m.task_center.MiningOpt(helper.Context, args, &task.outurl)
 }
 
 func (m *manager) waitNotify() {
 	for {
 		status := <-m.task_center.NotifyChnl()
-		/*
-			log.Infof(
-				"Notify: id=%v status=%v desc=%v",
-				status.TaskId,
-				rpcxutils.TaskState2Desc(status.TaskStatus.Status),
-				status.Desc,
-			)
-		*/
 
 		m.Lock()
 		for _, task := range m.task_list {
 			if status.TaskId == task.id {
+
 				task.status = rpcxutils.TaskState2Desc(status.TaskStatus.Status)
 				task.desc = status.Desc
+
+				if len(status.Worker) > 0 {
+					task.server = status.Worker
+				}
+
 				// Notify web to update task's status
-				m.client_notify.Relay(TaskStatusNotify{}).Call("UpdateTaskStatus", task.id, task.Status())
+				m.client_notify.Relay(TaskStatusNotify{}).Call(
+					"UpdateTaskStatus", task.Encode2Json())
+
+				if status.Status == rpcxutils.Task_Done_OK {
+					go func(t *task_item) {
+						t.downloadResultFile()
+						m.client_notify.Relay(TaskStatusNotify{}).Call(
+							"UpdateTaskStatus", t.Encode2Json())
+					}(task)
+				}
 				break
 			}
 		}
@@ -192,7 +198,6 @@ func (m *manager) waitNotify() {
 	}
 }
 
-func (n TaskStatusNotify) UpdateTaskStatus(relay *relayr.Relay, id, status string) {
-	log.Infof("Notify Web: id=%v status=%v", id, status)
-	relay.Clients.All("updateTaskStatus", id, status)
+func (n TaskStatusNotify) UpdateTaskStatus(relay *relayr.Relay, taskobj string) {
+	relay.Clients.All("updateTaskStatus", taskobj)
 }

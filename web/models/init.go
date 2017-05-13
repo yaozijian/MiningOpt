@@ -10,8 +10,8 @@ import (
 	"strings"
 
 	"github.com/astaxie/beego"
-	"github.com/yaozijian/relayr"
 	"github.com/yaozijian/MiningOpt/distribution"
+	"github.com/yaozijian/relayr"
 
 	log "github.com/cihub/seelog"
 )
@@ -59,12 +59,6 @@ func runTaskManager(webcfg *WebConfig) error {
 	//-----
 
 	go task_manager.waitNotify()
-
-	for _, task := range task_manager.task_list {
-		if task.status != Task_Done_OK {
-			task_manager.run_task(task)
-		}
-	}
 
 	task_manager.client_notify = relayr.NewExchange()
 	task_manager.client_notify.RegisterRelay(TaskStatusNotify{})

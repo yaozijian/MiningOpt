@@ -33,11 +33,16 @@
     <script src="/relayr"></script>
     <script type="text/javascript">
     	RelayRConnection.ready(function() {
-    		RelayR.TaskStatusNotify.client.updateTaskStatus = function(id,status) {
-    			var taskrow = document.getElementById(id);
+    		RelayR.TaskStatusNotify.client.updateTaskStatus = function(taskjson) {
+    			console.log("task notify: " + taskjson);
+    			var task = JSON.parse(taskjson);
+    			var taskrow = document.getElementById(task.Id);
     			if (taskrow != null){
-    				console.log("found taskrow");
-    				taskrow.cells[1].innerHTML = status;
+    				taskrow.cells[1].innerHTML = task.Status;
+    				taskrow.cells[5].innerHTML = task.Server;
+    				if (task.ResultURL){
+    					taskrow.cells[2].innerHTML = '<a href="' + task.ResultURL + '">result.gz</a>';
+    				}
     			}
     		};
 		});
@@ -65,24 +70,28 @@
 							<thead>
 								<tr>
 									<th>ID</th>
-									<th>Status</th>
-									<th>Server</th>
-									<th>Result</th>
-									<th>Create At</th>
+									<th>Status</th>									
+									<th>Result</th>									
 									<th>Data</th>
 									<th>Param</th>
+									<th>Server</th>
+									<th>Create At</th>
 								</tr>
 							</thead>
 							<tbody>
 								{{range .tasklist}}
 									<tr id="{{.Id}}">
 										<td>{{.Id}}</td>
-										<td>{{.Status}}</td>
-										<td></td>
-										<td></td>
-										<td>{{.Create}}</td>
+										<td>{{.Status}}</td>										
+										{{if .ResultURL | len }}
+											<td><a href="{{.ResultURL}}">result.gz</a></td>
+										{{else}}
+											<td></td>
+										{{end}}
 										<td><a href="{{.DataURL}}">data.gz</a></td>
 										<td><a href="{{.ParamURL}}">param.json</a></td>
+										<td>{{.Server}}</td>
+										<td>{{.Create}}</td>										
 									</tr>
 								{{end}}
 							</tbody>

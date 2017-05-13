@@ -42,7 +42,9 @@ func Run(cfg models.WebConfig) {
 
 	routers.Init(&cfg)
 
-	models.Init(&cfg)
+	if models.Init(&cfg) != nil {
+		return
+	}
 
 	beego.SetStaticPath("/"+models.Task_data_dir, models.Task_data_dir)
 
