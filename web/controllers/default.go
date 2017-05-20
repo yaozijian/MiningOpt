@@ -67,7 +67,7 @@ func (c *MainController) saveFile(id, field, name string) (string, error) {
 
 	if len(id) == 0 {
 		id = c.newTaskId()
-		if e = os.MkdirAll(models.Task_data_dir+"/"+id, 0666); e != nil {
+		if e = os.MkdirAll(models.Task_data_dir+"/"+id, 0777); e != nil {
 			return "", e
 		}
 	}
