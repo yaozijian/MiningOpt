@@ -41,8 +41,10 @@ func (c *MainController) Post() {
 			os.Remove(models.Task_data_dir + "/" + id)
 		}
 		c.Data["error"] = e.Error()
+		c.Data["msg"] = ""
 	} else {
 		c.Data["msg"] = "New Task OK"
+		c.Data["error"] = ""
 	}
 
 	c.TplName = "newtask.tpl"
